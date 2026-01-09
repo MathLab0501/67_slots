@@ -310,3 +310,38 @@
     background: darkgray;
     box-shadow: none;
 }
+
+.instructions-container {
+    display: flex;
+    position: relative;
+    max-height: 600px;
+    width: 500px;
+    overflow-y: auto;
+    background: cyan;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    border: 10px darkblue solid;
+}
+
+#back-button {
+    align-self: flex-start;
+    display: flex;
+    position: sticky;
+    align-items: center;
+    justify-content: center;
+    top: 8px;
+    left: 8px;
+    height: 30px;
+    width: 30px;
+    background: #00ffff;
+}
+
+#instructions-animation-text {
+    filter: blur(50px);
+    transition: filter 2s ease;
+}
+
+#instructions-animation-text:hover {
+    filter: blur(0);
+}
