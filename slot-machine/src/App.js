@@ -2,11 +2,14 @@ import './App.css';
 import sixImg from './6.png';
 import sevenImg from './7.png';
 import poissonImg from './Poisson.png';
-import {spinReels} from './slotsLogic';
+import {spinReels, spinResult} from './slotsLogic';
 import {useState} from 'react';
 
 function App() {
     const [amount, setAmount] = useState(0);
+    const [win, setWin] = useState(0);
+    const [mult, setMult] = useState(0);
+    const [animation, setAnimation] = useState(null);
     const [selectedButton, setSelectedButton] = useState(null);
     const [gameStarted, setGameStarted] = useState(false);
     const [showError, setShowError] = useState(false);
@@ -41,6 +44,10 @@ function App() {
     const handleReels = () => {
         const result = spinReels();
         setReels(result);
+        const {payout, multiplier, animation} = spinResult(amount, result);
+        setWin(payout);
+        setMult(multiplier);
+        setAnimation(animation);
     }
 
     return (
@@ -115,7 +122,8 @@ function App() {
                             <p>Having 3 identical numbers in a row will give you a 2x on the bet.</p>
                             <p>Having 4 identical numbers in a row will give you a 3x on the bet.</p>
                             <h2>Special Event:</h2>
-                            <p>Reels containing a 6 followed by a 7 will grant 5x the bet.</p>
+                            <p>Reels containing a 6 followed by a 7 will grant 6.7x the bet.</p>
+                            <p>The result 6-7-6-7 will grant a 10x multiplier on the bet.</p>
                             <p id="instructions-animation-text">It might also trigger an animation.</p>
                         </div>)
                 )}
