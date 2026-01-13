@@ -36,6 +36,14 @@ export function spinResult(amount, reelsResult) {
         }
     }
 
+    if (reelsResult[0] === reelsResult[3] && reelsResult[1] === reelsResult[2]) {
+        return {
+            payout: amount * 5,
+            multiplier: 5,
+            animation: null
+        };
+    }
+
     let count = 1;
     for (let i = 1; i < reelsResult.length; i++) {
         if (reelsResult[i] === reelsResult[0]) {

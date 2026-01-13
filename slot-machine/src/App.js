@@ -4,6 +4,7 @@ import sevenImg from './7.png';
 import poissonImg from './Poisson.png';
 import {spinReels, spinResult} from './slotsLogic';
 import {useState} from 'react';
+import { fetchWallet, performTransaction } from './api.js';
 
 function App() {
     const [amount, setAmount] = useState(0);
@@ -16,20 +17,39 @@ function App() {
     const [showInstructions, setShowInstructions] = useState(false);
     const [showBlur, setShowBlur] = useState(true);
     const [Reels, setReels] = useState([1, 1, 1, 1]);
+    const [userId, setUserId] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [wallet, setWallet] = useState(0);
+    const [isSpinning, setIsSpinning] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [testMode,setTestMode] = useState(false);
+
+    //animation states
+    const [isZoomedOut, setIsZoomedOut] = useState(false);
+    const [showArms, setShowArms] = useState(false);
+    const [isPumping, setIsPumping] = useState(false);
+    const [show67Text, setShow67Text] = useState(false);
 
     const handleBetClick = (newAmount) => {
         setAmount(newAmount);
         setSelectedButton(newAmount);
     };
 
-    const handleGameStarted = () => {
+    const handleGameStarted = async () => {
         if (selectedButton === null) {
             setShowError(true);
-        } else {
-            setGameStarted(true);
-            setShowBlur(false);
+            setErrorMessage('Please select an amount to play');
+            return;
         }
-    }
+
+        if (!isLoggedIn) {
+            await handleLogin();
+            return;
+        }
+
+        setGameStarted(true);
+        setShowBlur(false);
+    };
 
     const handleInstructions = () => {
         setShowBlur(true)
@@ -41,17 +61,115 @@ function App() {
         setShowInstructions(false);
     }
 
-    const handleReels = () => {
-        const result = spinReels();
-        setReels(result);
-        const {payout, multiplier, animation} = spinResult(amount, result);
-        setWin(payout);
-        setMult(multiplier);
-        setAnimation(animation);
-    }
+    const handleReels = async () => {
+        if (isSpinning) return;
+
+        if (isLoggedIn && amount > wallet) {
+            setErrorMessage('Insufficient funds!');
+            setShowError(true);
+            return;
+        }
+
+        setIsSpinning(true);
+        setShowError(false);
+
+        try {
+            const result = spinReels();
+            setReels(result);
+            const {payout, multiplier, animation} = spinResult(amount, result);
+            setWin(payout);
+            setMult(multiplier);
+            setAnimation(animation);
+
+            if (animation === 'six-seven') {
+                await trigger67Animation();
+            }
+
+            if (isLoggedIn) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const didWin = payout > 0;
+                if (didWin) {
+                    await performTransaction(true, userId, payout);
+                } else {
+                    await performTransaction(false, userId, amount);
+                }
+                const newBalance = await fetchWallet(userId);
+                setWallet(newBalance);
+            }
+        } catch (error) {
+            setErrorMessage('Transaction failed: ' + error.message);
+            setShowError(true);
+            console.error('Spin error:', error);
+        } finally {
+            setIsSpinning(false);
+        }
+    };
+
+    const trigger67Animation = async () => {
+        setIsZoomedOut(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setShowArms(true);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setIsPumping(true);
+        await new Promise(resolve => setTimeout(resolve, 6000));
+        setShow67Text(true);
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        setIsZoomedOut(false);
+        setShowArms(false);
+        setIsPumping(false);
+        setShow67Text(false);
+    };
+
+    const handleLogin = async () => {
+        const usernameInput = document.getElementById('username_input').value;
+
+        if (usernameInput.trim() === '') {
+            setErrorMessage('Please enter a username');
+            setShowError(true);
+            return;
+        }
+
+        setIsSpinning(true);
+        setShowError(false);
+
+        try {
+            const walletBalance = await fetchWallet(usernameInput);
+            setWallet(walletBalance);
+            setUserId(usernameInput);
+            setIsLoggedIn(true);
+            setShowError(false);
+
+        } catch (error) {
+            // Catch the 404 error or any other error
+            setErrorMessage(error.message || 'Failed to fetch wallet. Check user ID.');
+            setShowError(true);
+            setIsLoggedIn(false);
+            console.error('Login error:', error);
+        } finally {
+            setIsSpinning(false);
+        }
+    };
+
+    const handleTestLogin = () => {
+        // Instant login with fake data
+        setUserId('TEST_USER');
+        setWallet(10000);  // Lots of money for testing
+        setIsLoggedIn(true);
+        setGameStarted(true);
+        setShowBlur(false);
+        console.log('🧪 Quick test login - Wallet: $10000');
+    };
 
     return (
         <div className="App">
+            {testMode && (
+                <div className="test-mode-banner">
+                    🧪 TEST MODE - No API calls
+                    <button onClick={() => setTestMode(false)} className="switch-mode-btn">
+                        Switch to Real Mode
+                    </button>
+                </div>
+            )}
             <div className={`background ${showBlur ? "blur" : ""}`}></div>
             {!gameStarted ? (
                     <div className="login-container">
@@ -67,11 +185,13 @@ function App() {
                             <img id={"fish2"} src={poissonImg} alt={"Spinning Fish"}/>
                         </div>
                         <button id="start" type="submit" onClick={() => handleGameStarted()}>Start</button>
+                        <button id="test-login" onClick={handleTestLogin}>Test
+                        </button>
                         <h2 id="welcome"> Select your amount!</h2>
 
                         {showError && (
                             <div className="error">
-                                <p>Please select an amount to play</p>
+                                <p>{errorMessage || 'Please select an amount to play'}</p>
                             </div>
                         )}
                     </div>
@@ -79,8 +199,19 @@ function App() {
                 : (!showInstructions ? (
                             <div className="slots-container">
                                 <button id={"instructions"} onClick={() => handleInstructions()}>Instructions</button>
-                                <div id={"robot"}>
+                                {isLoggedIn && (
+                                    <div className="wallet-display">
+                                        <p>Wallet: ${wallet}</p>
+                                        <p>Bet: ${amount}</p>
+                                    </div>
+                                )}
+                                <div id={"robot"}
+                                     className={isZoomedOut ? 'zoomed-out' : ''}
+                                >
                                     <div id={"robot-head"}>
+                                        {show67Text && (
+                                            <div id="jackpot-67">67</div>
+                                        )}
                                         <div id="robot-face">
                                             <div className='robot-eye'/>
                                             <div className='robot-eye'/>
@@ -89,7 +220,9 @@ function App() {
                                     </div>
 
                                     <div id={"robot-body"}>
-                                        <div id={"robot-l-arm"}>
+                                        <div id={"robot-l-arm"}
+                                             className={`${showArms ? 'visible' : 'hidden'} ${isPumping ? 'pumping' : ''}`}
+                                                 >
                                             <div id={"robot-left-arm"}></div>
                                             <div id={"robot-left-hand"}></div>
                                         </div>
@@ -101,13 +234,21 @@ function App() {
                                                 <div className={"reel"}>{Reels[3]}</div>
                                             </div>
                                         </div>
-                                        <div id={"robot-r-arm"}>
+                                        <div id={"robot-r-arm"}
+                                             className={`${isPumping ? 'pumping' : ''}`}>
                                             <div id={"robot-right-arm"}></div>
                                             <div id={"robot-right-hand"}></div>
                                         </div>
                                     </div>
                                 </div>
-                                <button id={"spin-button"} onClick={handleReels}>Spin</button>
+                                <button
+                                    id={"spin-button"}
+                                    onClick={handleReels}
+                                    disabled={isSpinning}
+                                >
+                                    {isSpinning ? 'SPINNING...' : 'Spin'}
+                                </button>
+                                <p id={"winShow"}>You won: {win}!</p>
                             </div>)
                         : (<div className="instructions-container">
                             <button id={"back-button"} onClick={() => handleBackToGame()}>←</button>
@@ -121,6 +262,7 @@ function App() {
                             <p>Having 2 identical numbers in a row will give you a 1x on the bet.</p>
                             <p>Having 3 identical numbers in a row will give you a 2x on the bet.</p>
                             <p>Having 4 identical numbers in a row will give you a 3x on the bet.</p>
+                            <p>Having a palindrome result gives 5x the initial bet.</p>
                             <h2>Special Event:</h2>
                             <p>Reels containing a 6 followed by a 7 will grant 6.7x the bet.</p>
                             <p>The result 6-7-6-7 will grant a 10x multiplier on the bet.</p>

@@ -172,6 +172,25 @@
   transform: scale(1.05);
 }
 
+#test-login {
+    margin-left: 50px;
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #ffd700, #ffed4e);
+    color: #000;
+    border: 2px solid #000;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: transform 0.2s;
+}
+
+#test-login:hover {
+    transform: scale(1.05);
+    background: linear-gradient(145deg, #ffed4e, #ffd700);
+}
+
 #instructions {
     position: fixed;
     text-align: center;
@@ -197,6 +216,10 @@
     justify-content: center;
     align-items: center;
     flex-direction: column;
+}
+
+#robot.zoomed-out {
+    transform: scale(0.8);
 }
 
 #robot-head{
@@ -264,12 +287,26 @@
     height: 120px;
     background: #FFFFFF;
     border: 3px solid black;
+    font-size: 25px;
 }
 
 #robot-l-arm, #robot-r-arm{
     display: flex;
     flex-direction: column;
     border: 1px solid black;
+}
+
+#robot-l-arm.pumping, #robot-r-arm.pumping {
+    animation: armPump 0.6s ease-in-out infinite;
+}
+
+@keyframes armPump {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-30px);
+    }
 }
 
 #robot-left-arm, #robot-right-arm{
@@ -284,6 +321,61 @@
     background: linear-gradient(145deg, #b0b0b0, #808080);
     width: 50px;
     height: 25px;
+}
+
+#jackpot-67 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 60px;
+    font-weight: bold;
+    color: #ffff00;
+    text-shadow:
+            0 0 10px #ff0000,
+            0 0 20px #ff0000,
+            0 0 30px #ff0000,
+            0 0 40px #ff0000;
+    z-index: 10;
+    animation: jackpotPulse 1s ease-in-out infinite;
+}
+
+@keyframes jackpotPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+}
+
+#winShow{
+    display: flex;
+    position: fixed;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    bottom: 320px;
+    right: 20px;
+    text-shadow:
+            0 0 2px #000,
+            0 0 6px #ff0,
+            0 0 12px #ffa500;
+}
+
+.wallet-display {
+    position: absolute;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.wallet-display p {
+    margin: 5px 0;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 #spin-button {
