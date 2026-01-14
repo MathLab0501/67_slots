@@ -4,7 +4,7 @@ import sevenImg from './7.png';
 import poissonImg from './Poisson.png';
 import {spinReels, spinResult} from './slotsLogic';
 import {useState} from 'react';
-import { fetchWallet, performTransaction } from './api.js';
+import {fetchWallet, performTransaction} from './api.js';
 
 function App() {
     const [amount, setAmount] = useState(0);
@@ -22,12 +22,11 @@ function App() {
     const [wallet, setWallet] = useState(0);
     const [isSpinning, setIsSpinning] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [testMode,setTestMode] = useState(false);
+    const [testMode, setTestMode] = useState(false);
 
     //animation states
-    const [isZoomedOut, setIsZoomedOut] = useState(false);
-    const [showArms, setShowArms] = useState(false);
-    const [isPumping, setIsPumping] = useState(false);
+    const [isLeftPumping, setIsLeftPumping] = useState(false);
+    const [isRightPumping, setIsRightPumping] = useState(false);
     const [show67Text, setShow67Text] = useState(false);
 
     const handleBetClick = (newAmount) => {
@@ -106,17 +105,14 @@ function App() {
     };
 
     const trigger67Animation = async () => {
-        setIsZoomedOut(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setShowArms(true);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setIsPumping(true);
+        setIsLeftPumping(true);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setIsRightPumping(true);
         await new Promise(resolve => setTimeout(resolve, 6000));
         setShow67Text(true);
         await new Promise(resolve => setTimeout(resolve, 2500));
-        setIsZoomedOut(false);
-        setShowArms(false);
-        setIsPumping(false);
+        setIsLeftPumping(false);
+        setIsRightPumping(false);
         setShow67Text(false);
     };
 
@@ -140,7 +136,6 @@ function App() {
             setShowError(false);
 
         } catch (error) {
-            // Catch the 404 error or any other error
             setErrorMessage(error.message || 'Failed to fetch wallet. Check user ID.');
             setShowError(true);
             setIsLoggedIn(false);
@@ -151,13 +146,11 @@ function App() {
     };
 
     const handleTestLogin = () => {
-        // Instant login with fake data
         setUserId('TEST_USER');
-        setWallet(10000);  // Lots of money for testing
+        setWallet(10000);
         setIsLoggedIn(true);
         setGameStarted(true);
         setShowBlur(false);
-        console.log('🧪 Quick test login - Wallet: $10000');
     };
 
     return (
@@ -201,28 +194,26 @@ function App() {
                                 <button id={"instructions"} onClick={() => handleInstructions()}>Instructions</button>
                                 {isLoggedIn && (
                                     <div className="wallet-display">
-                                        <p>Wallet: ${wallet}</p>
-                                        <p>Bet: ${amount}</p>
+                                        <p>Wallet: {wallet}</p>
+                                        <p>Bet: {amount}</p>
                                     </div>
                                 )}
-                                <div id={"robot"}
-                                     className={isZoomedOut ? 'zoomed-out' : ''}
-                                >
+                                <div id={"robot"}>
                                     <div id={"robot-head"}>
-                                        {show67Text && (
-                                            <div id="jackpot-67">67</div>
-                                        )}
                                         <div id="robot-face">
                                             <div className='robot-eye'/>
                                             <div className='robot-eye'/>
                                         </div>
-                                        <div id={"robot-mouth"}/>
+                                        <div id={"robot-mouth"}
+                                             className={show67Text ? 'mouth-open' : ''}>                                        {show67Text && (
+                                            <div id="jackpot-67">67</div>
+                                        )}</div>
                                     </div>
 
                                     <div id={"robot-body"}>
                                         <div id={"robot-l-arm"}
-                                             className={`${showArms ? 'visible' : 'hidden'} ${isPumping ? 'pumping' : ''}`}
-                                                 >
+                                             className={`${isLeftPumping ? 'pumping' : ''}`}
+                                        >
                                             <div id={"robot-left-arm"}></div>
                                             <div id={"robot-left-hand"}></div>
                                         </div>
@@ -235,7 +226,7 @@ function App() {
                                             </div>
                                         </div>
                                         <div id={"robot-r-arm"}
-                                             className={`${isPumping ? 'pumping' : ''}`}>
+                                             className={`${isRightPumping ? 'pumping' : ''}`}>
                                             <div id={"robot-right-arm"}></div>
                                             <div id={"robot-right-hand"}></div>
                                         </div>
@@ -271,6 +262,9 @@ function App() {
                 )}
             {!showInstructions ? (
                 <div className="amount-buttons">
+                    <button className={`amount-button ${selectedButton === 5 ? "selected" : ""}`}
+                            onClick={() => handleBetClick(5)}>5
+                    </button>
                     <button className={`amount-button ${selectedButton === 10 ? "selected" : ""}`}
                             onClick={() => handleBetClick(10)}>10
                     </button>
@@ -285,9 +279,6 @@ function App() {
                     </button>
                     <button className={`amount-button ${selectedButton === 200 ? "selected" : ""}`}
                             onClick={() => handleBetClick(200)}>200
-                    </button>
-                    <button className={`amount-button ${selectedButton === 500 ? "selected" : ""}`}
-                            onClick={() => handleBetClick(500)}>500
                     </button>
                 </div>) : null}
         </div>
